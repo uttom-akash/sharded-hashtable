@@ -31,15 +31,20 @@ func (bucket *Bucket) Put(key *Key, value *Value) *Slot {
 
 	slot := bucket.find(key)
 
-	if slot == nil && !bucket.hasEmptySlots() && !bucket.hasDeletedSlots() {
+	if slot != nil {
+		return bucket.update(*key, *value, slot)
+	}
+
+	return bucket.PutNewKey(key, value)
+}
+
+func (bucket *Bucket) PutNewKey(key *Key, value *Value) *Slot {
+
+	if bucket.anySlotToInsert() {
 		return nil
 	}
 
-	if slot == nil {
-		return bucket.insert(*key, *value)
-	}
-
-	return bucket.update(*key, *value, slot)
+	return bucket.insert(*key, *value)
 }
 
 func (bucket *Bucket) Delete(key *Key) bool {
@@ -55,27 +60,37 @@ func (bucket *Bucket) Delete(key *Key) bool {
 	return true
 }
 
-func (bucket *Bucket) hasEmptySlots() bool {
-	return bucket.validSlots.GetSetBitCount() <= 14
-}
-
-func (bucket *Bucket) hasDeletedSlots() bool {
-	return bucket.deletedSlots.GetSetBitCount() > 0
-}
-
 func (bucket *Bucket) find(key *Key) *Slot {
-	for id, tag := range bucket.tags {
-		if tag == nil {
-			continue
-		}
-		
-		if tag.Tag == key.Key &&
-			bucket.validSlots.IsSet(uint8(id)) &&
-			!bucket.deletedSlots.IsSet(uint8(id)) &&
-			bucket.slots[id].key.Key == key.Key {
+	foundChannel := make(chan int)
+	defer close(foundChannel)
+
+	for id, _ := range bucket.tags {
+		id := id
+		go func() {
+			tag := bucket.tags[id]
+			if tag != nil &&
+				tag.IsEqual(key.Tag) &&
+				bucket.isSlotReadable(uint8(id)) &&
+				bucket.slots[id].key.IsEqual(key) {
+				foundChannel <- id
+			} else {
+				foundChannel <- -1
+			}
+		}()
+	}
+
+	index := 0
+	for id := range foundChannel {
+		if id != -1 {
 			return bucket.slots[id]
 		}
+
+		if index == len(bucket.tags)-1 {
+			return nil
+		}
+		index++
 	}
+
 	return nil
 }
 
@@ -95,19 +110,8 @@ func (bucket *Bucket) insert(key Key, value Value) *Slot {
 	return slot
 }
 
-func (bucket *Bucket) locateInsertableSlot() *Slot {
-	slotId := bucket.deletedSlots.GetSetBitIndex()
-
-	if slotId == -1 {
-		slotId = bucket.validSlots.GetUnsetBitIndex()
-	}
-
-	bucket.slots[slotId] = NewEmptySlot(uint8(slotId))
-
-	return bucket.slots[slotId]
-}
-
 func (bucket *Bucket) update(key Key, value Value, oldSlot *Slot) *Slot {
+
 	reserveSlotId := bucket.validSlots.GetUnsetBitIndex()
 
 	//step 1
@@ -126,4 +130,34 @@ func (bucket *Bucket) update(key Key, value Value, oldSlot *Slot) *Slot {
 	bucket.version.Newer()
 
 	return updatedSlot
+}
+
+func (bucket *Bucket) locateInsertableSlot() *Slot {
+	slotId := bucket.deletedSlots.GetSetBitIndex()
+
+	if slotId == -1 {
+		slotId = bucket.validSlots.GetUnsetBitIndex()
+	}
+
+	bucket.slots[slotId] = NewEmptySlot(uint8(slotId))
+
+	return bucket.slots[slotId]
+}
+
+func (bucket *Bucket) isSlotReadable(id uint8) bool {
+	return bucket.validSlots.IsSet(id) &&
+		!bucket.deletedSlots.IsSet(id)
+}
+
+func (bucket *Bucket) hasEmptySlots() bool {
+	return bucket.validSlots.GetSetBitCount() <= 15 // total slots 16, 1 slot should be reserved
+}
+
+func (bucket *Bucket) hasDeletedSlots() bool {
+	return bucket.deletedSlots.GetSetBitCount() > 0
+}
+
+func (bucket *Bucket) anySlotToInsert() bool {
+	return !bucket.hasEmptySlots() &&
+		!bucket.hasDeletedSlots()
 }
