@@ -12,6 +12,10 @@ func NewKey(key byte) *Key {
 	}
 }
 
+func (key *Key) IsEqual(pKey *Key) bool {
+	return key.Key == pKey.Key
+}
+
 type Value struct {
 	Value byte
 }
