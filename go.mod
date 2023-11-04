@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/devopsfaith/bloomfilter v1.4.0 // indirect
+	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/tmthrgd/atomics v0.0.0-20180217065130-6910de195248 // indirect
 	github.com/tmthrgd/go-bitset v0.0.0-20180828125936-62ad9ed7ff29 // indirect
 	github.com/tmthrgd/go-bitwise v0.0.0-20170218093117-01bef038b6bd // indirect
