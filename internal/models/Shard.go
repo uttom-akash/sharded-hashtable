@@ -15,7 +15,8 @@ type Shard struct {
 func NewShard() *Shard {
 	return &Shard{
 		Version:     NewVersion(),
-		bloomFilter: core.NewBloomFilter(50000, 0.00002, "optimal"),
+		bloomFilter: core.NewBloomFilter(10000, 0.01, "optimal"),
+		// bloom filter : https://hur.st/bloomfilter/?n=50000&p=0.00002&m=&k=
 	}
 }
 
@@ -43,16 +44,24 @@ func (shard *Shard) Put(key byte, value byte) *Value {
 	keyObject := NewKey(key)
 	valueObject := NewValue(value)
 
+	notExist := !shard.bloomFilter.Check([]byte{key})
+
 	shard.writeLock.Lock()
 	defer shard.writeLock.Unlock()
 
-	for index, bucket := range shard.Buckets {
+	for _, bucket := range shard.Buckets {
 		if bucket == nil {
 			bucket = NewBucket()
-			shard.Buckets[index] = bucket
+			//shard.Buckets[index] = bucket
+		}
+		var slot *Slot
+
+		if notExist {
+			slot = bucket.PutNewKey(keyObject, valueObject)
+		} else {
+			slot = bucket.Put(keyObject, valueObject)
 		}
 
-		slot := bucket.Put(keyObject, valueObject)
 		if slot != nil {
 			shard.bloomFilter.Add([]byte{slot.key.Key})
 			return slot.value
@@ -62,6 +71,11 @@ func (shard *Shard) Put(key byte, value byte) *Value {
 }
 
 func (shard *Shard) Delete(key byte) bool {
+	notExist := !shard.bloomFilter.Check([]byte{key})
+
+	if notExist {
+		return false
+	}
 
 	keyObject := NewKey(key)
 	for _, bucket := range shard.Buckets {
@@ -74,5 +88,5 @@ func (shard *Shard) Delete(key byte) bool {
 			return true
 		}
 	}
-	return true
+	return false
 }
