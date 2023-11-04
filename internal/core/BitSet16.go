@@ -38,12 +38,11 @@ func (b *BitSet16) GetSetBitCount() uint8 {
 }
 
 func (b *BitSet16) GetSetBitIndex() int8 {
-	for index := int8(0); index < LENGTH; index++ {
-		if b.bitset&(1<<index) != 0 {
-			return index
-		}
+	if b.bitset == 0 {
+		return -1
 	}
-	return int8(-1)
+	index := int8(bits.TrailingZeros16(b.bitset))
+	return index
 }
 
 func (b *BitSet16) GetUnsetBitIndex() int8 {
