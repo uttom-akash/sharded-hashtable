@@ -1,8 +1,11 @@
 package models
 
 import (
-	"scale.kv.store/internal/core"
+	"fmt"
 	"sync"
+	"time"
+
+	"scale.kv.store/internal/core"
 )
 
 type Shard struct {
@@ -23,17 +26,28 @@ func NewShard() *Shard {
 func (shard *Shard) Get(key byte) *Value {
 
 	if !shard.bloomFilter.Check([]byte{key}) {
+		// key doesn't exist in this shard
 		return nil
 	}
 
 	keyObject := NewKey(key)
+
 	for _, bucket := range shard.Buckets {
 		if bucket == nil {
 			continue
 		}
 
+		startTime := time.Now()
+
 		slot := bucket.Get(keyObject)
+
 		if slot != nil {
+			endTime := time.Now()
+
+			duration := endTime.Sub(startTime)
+
+			fmt.Printf("Get execution took %s\n", duration)
+
 			return slot.value
 		}
 	}
@@ -49,10 +63,10 @@ func (shard *Shard) Put(key byte, value byte) *Value {
 	shard.writeLock.Lock()
 	defer shard.writeLock.Unlock()
 
-	for _, bucket := range shard.Buckets {
+	for index, bucket := range shard.Buckets {
 		if bucket == nil {
 			bucket = NewBucket()
-			//shard.Buckets[index] = bucket
+			shard.Buckets[index] = bucket
 		}
 		var slot *Slot
 

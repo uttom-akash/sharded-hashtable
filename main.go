@@ -33,7 +33,7 @@ func main() {
 
 	fmt.Println(shard.Put(5, 5).Value)
 
-	fmt.Println(shard.Get(5).Value)
+	fmt.Println(shard.Get(5))
 
 	fmt.Println(shard.Delete(5))
 

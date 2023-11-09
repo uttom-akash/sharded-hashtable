@@ -60,18 +60,21 @@ func (bucket *Bucket) Delete(key *Key) bool {
 	return true
 }
 
-func (bucket *Bucket) find(key *Key) *Slot {
+func (bucket *Bucket) findP(key *Key) *Slot {
 	foundChannel := make(chan int)
-	defer close(foundChannel)
+	// defer close(foundChannel)
 
-	for id, _ := range bucket.tags {
-		id := id
+	for index := range bucket.tags {
+		id := index
 		go func() {
 			tag := bucket.tags[id]
-			if tag != nil &&
+
+			isMatch := tag != nil &&
 				tag.IsEqual(key.Tag) &&
 				bucket.isSlotReadable(uint8(id)) &&
-				bucket.slots[id].key.IsEqual(key) {
+				bucket.slots[id].key.IsEqual(key)
+
+			if isMatch {
 				foundChannel <- id
 			} else {
 				foundChannel <- -1
@@ -80,15 +83,33 @@ func (bucket *Bucket) find(key *Key) *Slot {
 	}
 
 	index := 0
+
 	for id := range foundChannel {
 		if id != -1 {
 			return bucket.slots[id]
 		}
 
 		if index == len(bucket.tags)-1 {
-			return nil
+			break
 		}
 		index++
+	}
+
+	return nil
+}
+
+func (bucket *Bucket) find(key *Key) *Slot {
+
+	for id, tag := range bucket.tags {
+
+		isMatch := tag != nil &&
+			tag.IsEqual(key.Tag) &&
+			bucket.isSlotReadable(uint8(id)) &&
+			bucket.slots[id].key.IsEqual(key)
+
+		if isMatch {
+			return bucket.slots[id]
+		}
 	}
 
 	return nil
@@ -120,9 +141,11 @@ func (bucket *Bucket) update(key Key, value Value, oldSlot *Slot) *Slot {
 	bucket.tags[reserveSlotId] = key.Tag
 
 	//step 2
+	// make visible
 	bucket.validSlots.Set(updatedSlot.Id)
 	bucket.deletedSlots.Unset(updatedSlot.Id)
 
+	// make invisible
 	bucket.validSlots.Unset(oldSlot.Id)
 	bucket.slots[oldSlot.Id] = nil
 	bucket.tags[oldSlot.Id] = nil
