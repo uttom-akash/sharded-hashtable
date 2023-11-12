@@ -15,8 +15,8 @@ type Bucket struct {
 func NewBucket() *Bucket {
 	return &Bucket{
 		version:      NewVersion(),
-		validSlots:   core.NewBitSet16(),
-		deletedSlots: core.NewBitSet16(),
+		validSlots:   core.NewBitSet16(), // set false to make this slot empty and search path end here.
+		deletedSlots: core.NewBitSet16(), // set while deleting slot so that search path doesn't end here but this slot is not readable
 	}
 }
 
@@ -40,7 +40,7 @@ func (bucket *Bucket) Put(key *Key, value *Value) *Slot {
 
 func (bucket *Bucket) PutNewKey(key *Key, value *Value) *Slot {
 
-	if bucket.anySlotToInsert() {
+	if !bucket.anySlotToInsert() {
 		return nil
 	}
 
@@ -60,51 +60,51 @@ func (bucket *Bucket) Delete(key *Key) bool {
 	return true
 }
 
-func (bucket *Bucket) findP(key *Key) *Slot {
-	foundChannel := make(chan int)
-	// defer close(foundChannel)
+// func (bucket *Bucket) findP(key *Key) *Slot {
+// 	foundChannel := make(chan int)
+// 	// defer close(foundChannel)
 
-	for index := range bucket.tags {
-		id := index
-		go func() {
-			tag := bucket.tags[id]
+// 	for index := range bucket.tags {
+// 		id := index
+// 		go func() {
+// 			tag := bucket.tags[id]
 
-			isMatch := tag != nil &&
-				tag.IsEqual(key.Tag) &&
-				bucket.isSlotReadable(uint8(id)) &&
-				bucket.slots[id].key.IsEqual(key)
+// 			isMatch := tag != nil &&
+// 				tag.IsEqual(key.Tag) &&
+// 				bucket.isSlotReadable(uint8(id)) &&
+// 				bucket.slots[id].key.IsEqual(key)
 
-			if isMatch {
-				foundChannel <- id
-			} else {
-				foundChannel <- -1
-			}
-		}()
-	}
+// 			if isMatch {
+// 				foundChannel <- id
+// 			} else {
+// 				foundChannel <- -1
+// 			}
+// 		}()
+// 	}
 
-	index := 0
+// 	index := 0
 
-	for id := range foundChannel {
-		if id != -1 {
-			return bucket.slots[id]
-		}
+// 	for id := range foundChannel {
+// 		if id != -1 {
+// 			return bucket.slots[id]
+// 		}
 
-		if index == len(bucket.tags)-1 {
-			break
-		}
-		index++
-	}
+// 		if index == len(bucket.tags)-1 {
+// 			break
+// 		}
+// 		index++
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (bucket *Bucket) find(key *Key) *Slot {
 
 	for id, tag := range bucket.tags {
 
-		isMatch := tag != nil &&
+		isMatch := bucket.isSlotVisible(uint8(id)) &&
+			tag != nil &&
 			tag.IsEqual(key.Tag) &&
-			bucket.isSlotReadable(uint8(id)) &&
 			bucket.slots[id].key.IsEqual(key)
 
 		if isMatch {
@@ -141,11 +141,11 @@ func (bucket *Bucket) update(key Key, value Value, oldSlot *Slot) *Slot {
 	bucket.tags[reserveSlotId] = key.Tag
 
 	//step 2
-	// make visible
+	// make new slot visible
 	bucket.validSlots.Set(updatedSlot.Id)
 	bucket.deletedSlots.Unset(updatedSlot.Id)
 
-	// make invisible
+	// make old slot invisible
 	bucket.validSlots.Unset(oldSlot.Id)
 	bucket.slots[oldSlot.Id] = nil
 	bucket.tags[oldSlot.Id] = nil
@@ -156,6 +156,10 @@ func (bucket *Bucket) update(key Key, value Value, oldSlot *Slot) *Slot {
 }
 
 func (bucket *Bucket) locateInsertableSlot() *Slot {
+
+	// first try to fill deleted slot
+	// then try to fill empty slot
+
 	slotId := bucket.deletedSlots.GetSetBitIndex()
 
 	if slotId == -1 {
@@ -167,20 +171,26 @@ func (bucket *Bucket) locateInsertableSlot() *Slot {
 	return bucket.slots[slotId]
 }
 
-func (bucket *Bucket) isSlotReadable(id uint8) bool {
+func (bucket *Bucket) isSlotVisible(id uint8) bool {
+	// slot is visible if it is valid or not deleted
+
 	return bucket.validSlots.IsSet(id) &&
 		!bucket.deletedSlots.IsSet(id)
 }
 
-func (bucket *Bucket) hasEmptySlots() bool {
-	return bucket.validSlots.GetSetBitCount() <= 15 // total slots 16, 1 slot should be reserved
+func (bucket *Bucket) HasEmptySlots() bool {
+	// total slots 16, 1 slot should be reserved
+
+	return bucket.validSlots.GetSetBitCount() < 15
 }
 
 func (bucket *Bucket) hasDeletedSlots() bool {
+
 	return bucket.deletedSlots.GetSetBitCount() > 0
 }
 
 func (bucket *Bucket) anySlotToInsert() bool {
-	return !bucket.hasEmptySlots() &&
-		!bucket.hasDeletedSlots()
+
+	// there is empty slot or deleted slot
+	return bucket.HasEmptySlots() || bucket.hasDeletedSlots()
 }
