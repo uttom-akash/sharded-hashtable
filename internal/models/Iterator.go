@@ -6,22 +6,29 @@ type Iterator struct {
 	size         int
 }
 
-func NewIterator(startIndex int, size int) *Iterator
-{
+func NewIterator(startIndex int, size int) *Iterator {
+	startIndex = startIndex % size
+
 	return &Iterator{
-		startIndex: startIndex,
-		currentIndex: -1,
-		size: size,
+		startIndex:   startIndex,
+		currentIndex: startIndex,
+		size:         size,
 	}
 }
 
 func (iterator *Iterator) Next() int {
 
-	if iterator.currentIndex == (iterator.startIndex - 1+iterator.size)%iterator.size{//current index is at pervious index of start index
-		return -1;
+	nextIndex := (iterator.currentIndex + 1) % iterator.size
+
+	if nextIndex == iterator.startIndex { //current index is at pervious index of start index
+		return -1
 	}
 
-	iterator.currentIndex= (iterator.currentIndex + 1)%iterator.size
+	iterator.currentIndex = nextIndex
 
+	return iterator.currentIndex
+}
+
+func (iterator *Iterator) Current() int {
 	return iterator.currentIndex
 }
