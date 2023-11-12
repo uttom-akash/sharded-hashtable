@@ -102,8 +102,11 @@ func (bucket *Bucket) find(key *Key) *Slot {
 
 	for id, tag := range bucket.tags {
 
+		if tag == nil {
+			continue
+		}
+
 		isMatch := bucket.isSlotVisible(uint8(id)) &&
-			tag != nil &&
 			tag.IsEqual(key.Tag) &&
 			bucket.slots[id].key.IsEqual(key)
 
