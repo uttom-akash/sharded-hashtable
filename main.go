@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"scale.kv.store/internal/models"
 	"strconv"
+
+	"scale.kv.store/internal/models"
 )
 
 func ConfigureLogger() *os.File {
