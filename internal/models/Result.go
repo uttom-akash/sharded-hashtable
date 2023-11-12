@@ -3,7 +3,7 @@ package models
 type ResultStatus int
 
 const (
-	Found ResultStatus = iota
+	Found ResultStatus = iota + 1
 	ContinueSearch
 	StopSearch
 	AddedOrUpdated

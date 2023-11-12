@@ -32,13 +32,27 @@ func main() {
 
 	fmt.Println("shard version: " + strconv.FormatUint(uint64(shard.Version.Get()), 10))
 
-	fmt.Println(shard.Put(5, 5).Value)
+	fmt.Println(shard.Put(5, 5))
+
+	fmt.Println(shard.Put(5, 5))
+
+	fmt.Println(shard.Put(5, 5))
+
+	fmt.Println(shard.Put(5, 5))
+
+	fmt.Println("Get 5")
 
 	fmt.Println(shard.Get(5))
+
+	fmt.Println("Delete 5")
 
 	fmt.Println(shard.Delete(5))
 
+	fmt.Println("Get 5")
+
 	fmt.Println(shard.Get(5))
+
+	fmt.Println("Buckets")
 
 	fmt.Println(shard.Buckets[0])
 }
