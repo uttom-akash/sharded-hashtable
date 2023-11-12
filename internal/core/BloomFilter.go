@@ -42,3 +42,11 @@ func (bf *BloomFilter) Add(element []byte) {
 func (bf *BloomFilter) Check(element []byte) bool {
 	return bf.bloomFilter.Check(element)
 }
+
+func (bf *BloomFilter) Exist(element []byte) bool {
+	return bf.bloomFilter.Check(element)
+}
+
+func (bf *BloomFilter) DoesNotExist(element []byte) bool {
+	return !bf.Exist(element)
+}
