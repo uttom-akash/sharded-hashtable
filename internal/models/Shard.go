@@ -17,7 +17,9 @@ type Shard struct {
 
 func NewShard() *Shard {
 	return &Shard{
-		Version:     NewVersion(),
+		Version: NewVersion(),
+		//TODO: reduce the size
+		//TODO: check alternative like cuckoo filter
 		bloomFilter: core.NewBloomFilter(10000, 0.01, "optimal"),
 		// bloom filter : https://hur.st/bloomfilter/?n=50000&p=0.00002&m=&k=
 	}
@@ -37,7 +39,7 @@ func (shard *Shard) Get(key byte) *Result {
 
 	iterator := NewIterator(int(hashedBucketId), NUMBER_OF_BUCKET)
 
-	bucketId := iterator.Next()
+	bucketId := iterator.Current()
 	for bucketId != -1 {
 
 		bucket := shard.Buckets[bucketId]
@@ -57,6 +59,8 @@ func (shard *Shard) Get(key byte) *Result {
 			// path end
 			return NewStopSearchResult()
 		}
+
+		bucketId = iterator.Next()
 	}
 
 	//Couldn't found and also buckets are full
@@ -77,7 +81,7 @@ func (shard *Shard) Put(key byte, value byte) *Result {
 
 	iterator := NewIterator(int(hashedBucketId), NUMBER_OF_BUCKET)
 
-	bucketId := iterator.Next()
+	bucketId := iterator.Current()
 	for bucketId != -1 {
 
 		bucket := shard.Buckets[bucketId]
@@ -119,7 +123,7 @@ func (shard *Shard) Delete(key byte) *Result {
 
 	iterator := NewIterator(int(hashedBucketId), NUMBER_OF_BUCKET)
 
-	bucketId := iterator.Next()
+	bucketId := iterator.Current()
 	for bucketId != -1 {
 
 		bucket := shard.Buckets[bucketId]
@@ -138,6 +142,8 @@ func (shard *Shard) Delete(key byte) *Result {
 			// path end
 			return NewStopSearchResult()
 		}
+
+		bucketId = iterator.Next()
 	}
 
 	return NewContinueSearchResult()
