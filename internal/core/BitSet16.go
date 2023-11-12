@@ -22,13 +22,14 @@ func (b *BitSet16) Set(index uint8) {
 
 func (b *BitSet16) Unset(index uint8) {
 	if index < LENGTH {
-		b.bitset = b.bitset & ^(1 << index)
+		b.bitset = b.bitset & (^(1 << index))
 	}
 }
 
 func (b *BitSet16) IsSet(index uint8) bool {
 	if index < LENGTH {
-		return b.bitset&(1<<index) == 1
+
+		return ((b.bitset >> index) & 1) == 1
 	}
 	return false
 }
