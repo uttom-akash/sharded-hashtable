@@ -187,7 +187,7 @@ func (bucket *Bucket) HasEmptySlots() bool {
 	return bucket.validSlots.GetSetBitCount() < 15
 }
 
-func (bucket *Bucket) hasDeletedSlots() bool {
+func (bucket *Bucket) HasDeletedSlots() bool {
 
 	return bucket.deletedSlots.GetSetBitCount() > 0
 }
@@ -195,5 +195,5 @@ func (bucket *Bucket) hasDeletedSlots() bool {
 func (bucket *Bucket) anySlotToInsert() bool {
 
 	// there is empty slot or deleted slot
-	return bucket.HasEmptySlots() || bucket.hasDeletedSlots()
+	return bucket.HasEmptySlots() || bucket.HasDeletedSlots()
 }

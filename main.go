@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 
 	"scale.kv.store/internal/models"
 )
@@ -28,31 +27,31 @@ func main() {
 	logfile := ConfigureLogger()
 	defer logfile.Close()
 
-	shard := models.NewShard()
+	coordinator := models.NewCoordinator()
 
-	fmt.Println("shard version: " + strconv.FormatUint(uint64(shard.Version.Get()), 10))
+	fmt.Println(coordinator.IndexRing[0])
 
-	fmt.Println(shard.Put(5, 5))
+	fmt.Println(coordinator.Put(5, 5))
 
-	fmt.Println(shard.Put(5, 5))
+	fmt.Println(coordinator.Put(5, 5))
 
-	fmt.Println(shard.Put(5, 5))
+	fmt.Println(coordinator.Put(5, 5))
 
-	fmt.Println(shard.Put(5, 5))
-
-	fmt.Println("Get 5")
-
-	fmt.Println(shard.Get(5))
-
-	fmt.Println("Delete 5")
-
-	fmt.Println(shard.Delete(5))
+	fmt.Println(coordinator.Put(5, 5))
 
 	fmt.Println("Get 5")
 
-	fmt.Println(shard.Get(5))
+	fmt.Println(coordinator.Get(5).Value)
 
-	fmt.Println("Buckets")
+	// fmt.Println("Delete 5")
 
-	fmt.Println(shard.Buckets[0])
+	// fmt.Println(coordinator.Delete(5))
+
+	fmt.Println("Get 5")
+
+	fmt.Println(coordinator.Get(5))
+
+	// fmt.Println("Buckets")
+
+	// fmt.Println(coordinator.Buckets[0])
 }

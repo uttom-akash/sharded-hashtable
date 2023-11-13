@@ -1,8 +1,6 @@
 package models
 
 import (
-	"sync"
-
 	"scale.kv.store/internal/core"
 )
 
@@ -12,7 +10,6 @@ type Shard struct {
 	Version     *Version
 	bloomFilter *core.BloomFilter
 	Buckets     [NUMBER_OF_BUCKET]*Bucket
-	writeLock   sync.Mutex
 }
 
 func NewShard() *Shard {
@@ -67,44 +64,81 @@ func (shard *Shard) Get(key byte) *Result {
 	return NewContinueSearchResult()
 }
 
-func (shard *Shard) Put(key byte, value byte) *Result {
+func (shard *Shard) SearchForWrite(key byte) *Result {
+
+	//quick check
+	//TODO: keep track of empty and deleted bucket
+	// if shard.bloomFilter.DoesNotExist([]byte{key}) {
+
+	// 	return NewContinueSearchResult()
+	// }
 
 	keyObject := NewKey(key)
-	valueObject := NewValue(value)
-
-	doesNotExist := shard.bloomFilter.DoesNotExist([]byte{key})
-
-	shard.writeLock.Lock()
-	defer shard.writeLock.Unlock()
 
 	hashedBucketId := core.Get16MurmurHash([]byte{keyObject.Key})
 
 	iterator := NewIterator(int(hashedBucketId), NUMBER_OF_BUCKET)
 
 	bucketId := iterator.Current()
+
+	var bucketHavingDeletedSlot int
+
 	for bucketId != -1 {
 
 		bucket := shard.Buckets[bucketId]
 
 		if bucket == nil {
-			bucket = NewBucket()
-			shard.Buckets[bucketId] = bucket
+			// path end
+			return NewStopSearchResultWithBucket(bucketId)
 		}
 
-		var slot *Slot
-
-		if doesNotExist {
-			slot = bucket.PutNewKey(keyObject, valueObject)
-		} else {
-			slot = bucket.Put(keyObject, valueObject)
-		}
+		slot := bucket.Get(keyObject)
 
 		if slot != nil {
-			shard.bloomFilter.Add([]byte{slot.key.Key})
-			return NewAddedOrUpdatedResult(*slot.value)
+			return NewFoundResultWithBucket(*slot.value, bucketId)
+		}
+
+		if bucket.HasEmptySlots() {
+			// path end
+			return NewStopSearchResultWithBucket(bucketId)
+		}
+
+		if bucket.HasDeletedSlots() { //TODO: set first deleted slot
+			bucketHavingDeletedSlot = bucketId
 		}
 
 		bucketId = iterator.Next()
+	}
+
+	//Couldn't found and also buckets are full
+	return NewContinueSearchResultWithBucket(bucketHavingDeletedSlot)
+}
+
+func (shard *Shard) Put(key byte, value byte, bucketId int) *Result {
+
+	keyObject := NewKey(key)
+
+	valueObject := NewValue(value)
+
+	doesNotExist := shard.bloomFilter.DoesNotExist([]byte{key})
+
+	if shard.Buckets[bucketId] == nil {
+		shard.Buckets[bucketId] = NewBucket()
+	}
+	bucket := shard.Buckets[bucketId]
+
+	var slot *Slot
+
+	if doesNotExist {
+		slot = bucket.PutNewKey(keyObject, valueObject)
+	} else {
+		slot = bucket.Put(keyObject, valueObject)
+	}
+
+	if slot != nil {
+		shard.bloomFilter.Add([]byte{slot.key.Key})
+
+		return NewAddedOrUpdatedResult(*slot.value)
 	}
 
 	return NewContinueSearchResult()
