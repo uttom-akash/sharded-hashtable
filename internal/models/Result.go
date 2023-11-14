@@ -11,8 +11,9 @@ const (
 )
 
 type Result struct {
-	Status ResultStatus
-	Value  Value
+	Status   ResultStatus
+	Value    Value
+	BucketId *int
 }
 
 func NewFoundResult(value Value) *Result {
@@ -53,5 +54,27 @@ func NewAddedOrUpdatedResult(value Value) *Result {
 func NewDeletedResult() *Result {
 	return &Result{
 		Status: Deleted,
+	}
+}
+
+func NewFoundResultWithBucket(value Value, bucketId int) *Result {
+	return &Result{
+		Status:   Found,
+		Value:    value,
+		BucketId: &bucketId,
+	}
+}
+
+func NewContinueSearchResultWithBucket(bucketId int) *Result {
+	return &Result{
+		Status:   ContinueSearch,
+		BucketId: &bucketId,
+	}
+}
+
+func NewStopSearchResultWithBucket(bucketId int) *Result {
+	return &Result{
+		Status:   StopSearch,
+		BucketId: &bucketId,
 	}
 }
