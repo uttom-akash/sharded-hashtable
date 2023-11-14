@@ -29,27 +29,27 @@ func main() {
 
 	coordinator := models.NewCoordinator()
 
-	fmt.Println(coordinator.IndexRing[0])
+	fmt.Println(coordinator.IndexRing.IndexRing[0])
 
-	fmt.Println(coordinator.Put(5, 5))
+	fmt.Println(coordinator.Put(5, 5).ToString())
 
-	fmt.Println(coordinator.Put(5, 5))
+	fmt.Println(coordinator.Put(5, 5).ToString())
 
-	fmt.Println(coordinator.Put(5, 5))
+	fmt.Println(coordinator.Put(5, 5).ToString())
 
-	fmt.Println(coordinator.Put(5, 5))
-
-	fmt.Println("Get 5")
-
-	fmt.Println(coordinator.Get(5).Value)
-
-	// fmt.Println("Delete 5")
-
-	// fmt.Println(coordinator.Delete(5))
+	fmt.Println(coordinator.Put(5, 5).ToString())
 
 	fmt.Println("Get 5")
 
-	fmt.Println(coordinator.Get(5))
+	fmt.Println(coordinator.Get(5).ToString())
+
+	fmt.Println("Delete 5")
+
+	fmt.Println(coordinator.Delete(5).ToString())
+
+	fmt.Println("Get 5")
+
+	fmt.Println(coordinator.Get(5).ToString())
 
 	// fmt.Println("Buckets")
 
