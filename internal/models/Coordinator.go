@@ -1,13 +1,15 @@
 package models
 
 type Coordinator struct {
-	IndexRing *IndexRing
+	IndexRing    *IndexRing
+	ShardManager *ShardManager
 }
 
 func NewCoordinator() *Coordinator {
 
 	return &Coordinator{
-		IndexRing: NewIndexRing(),
+		IndexRing:    NewIndexRing(),
+		ShardManager: NewShardManager(),
 	}
 }
 
@@ -19,7 +21,8 @@ func (coordinator *Coordinator) Get(key byte) *Result {
 
 	var result *Result
 
-	for _, shard := range spot.Shards {
+	for _, shardMetadata := range spot.Shards {
+		shard := coordinator.ShardManager.GetShard(shardMetadata.ShardId)
 
 		result := shard.Get(key)
 
@@ -44,7 +47,8 @@ func (coordinator *Coordinator) Put(key byte, value byte) *Result {
 	var shardd *Shard
 	var result *Result
 
-	for _, shard := range spot.Shards {
+	for _, shardMetadata := range spot.Shards {
+		shard := coordinator.ShardManager.GetShard(shardMetadata.ShardId)
 
 		result := shard.SearchForWrite(key)
 
@@ -75,7 +79,8 @@ func (coordinator *Coordinator) Delete(key byte) *Result {
 
 	var result *Result
 
-	for _, shard := range spot.Shards {
+	for _, shardMetadata := range spot.Shards {
+		shard := coordinator.ShardManager.GetShard(shardMetadata.ShardId)
 
 		result := shard.Delete(key)
 

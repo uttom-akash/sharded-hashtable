@@ -1,30 +1,43 @@
 package models
 
 import (
+	"math/rand"
 	"sync"
 
 	"scale.kv.store/internal/core"
 )
 
-const NUMBER_OF_SPOTS = 1000000
+type ShardMetadata struct {
+	ShardId uint32
+}
+
+func NewShardMetadata() *ShardMetadata {
+	return &ShardMetadata{
+		ShardId: 0, //Todo
+	}
+}
 
 type ShardGroupMetadata struct {
 	writeLock    sync.Mutex
 	ShardGroupId uint32
-	Shards       []*Shard //TODO shard metadata
+	Shards       []*ShardMetadata //TODO shard metadata
 }
 
 func NewShardGroup() *ShardGroupMetadata {
-	shards := make([]*Shard, 1)
-	shards[0] = NewShard()
+	shards := make([]*ShardMetadata, 1)
+	shards[0] = NewShardMetadata()
 
 	return &ShardGroupMetadata{
-		Shards: shards,
+		Shards:       shards,
+		ShardGroupId: rand.Uint32(),
 	}
 }
 
+const NUMBER_OF_SPOTS = 1000000
+
 type IndexRing struct {
-	IndexRing []*ShardGroupMetadata
+	Ring []*ShardGroupMetadata
+	Size uint32
 }
 
 func NewIndexRing() *IndexRing {
@@ -37,18 +50,19 @@ func NewIndexRing() *IndexRing {
 	}
 
 	return &IndexRing{
-		IndexRing: indexRing,
+		Ring: indexRing,
+		Size: NUMBER_OF_SPOTS,
 	}
 }
 
-func (*IndexRing) getSpotId(key byte) uint32 {
+func (indexRing *IndexRing) getSpotId(key byte) uint32 {
 	hashedKey := core.Get32MurmurHash([]byte{key})
 
-	spotId := hashedKey % NUMBER_OF_SPOTS
+	spotId := hashedKey % indexRing.Size
 
 	return spotId
 }
 
 func (indexRing *IndexRing) getNextSpot(spotId uint32) *ShardGroupMetadata {
-	return indexRing.IndexRing[spotId]
+	return indexRing.Ring[spotId]
 }

@@ -29,7 +29,7 @@ func main() {
 
 	coordinator := models.NewCoordinator()
 
-	fmt.Println(coordinator.IndexRing.IndexRing[0])
+	fmt.Println(coordinator.IndexRing.Ring[0])
 
 	fmt.Println(coordinator.Put(5, 5).ToString())
 
