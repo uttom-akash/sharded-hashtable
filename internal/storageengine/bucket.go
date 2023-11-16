@@ -1,4 +1,4 @@
-package models
+package storageengine
 
 import (
 	"scale.kv.store/internal/core"
