@@ -8,9 +8,6 @@ import (
 
 const NUMBER_OF_SPOTS = 1000000
 
-// get shard group
-//
-
 type Coordinator struct {
 	IndexRing                 *core.IndexRing
 	ShardGroupMetadataManager *ShardGroupMetadataManager

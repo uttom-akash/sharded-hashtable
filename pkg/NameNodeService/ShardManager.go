@@ -2,6 +2,7 @@ package coordinationservice
 
 import "scale.kv.store/internal/storageengine"
 
+// this will be replaced with zookeeper
 type ShardManager struct {
 	Shards []*storageengine.Shard
 }

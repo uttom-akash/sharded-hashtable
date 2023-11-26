@@ -10,15 +10,15 @@ type ShardGroupMetadataManager struct {
 
 func NewShardGroupMetadataManager() *ShardGroupMetadataManager {
 
-	shards := make([]*metadata.ShardGroupMetadata, 1)
-	shards[0] = metadata.NewShardGroup(0)
+	shardGroups := make([]*metadata.ShardGroupMetadata, 1)
+	shardGroups[0] = metadata.NewShardGroup(0)
 
 	return &ShardGroupMetadataManager{
-		shardGroups: shards,
+		shardGroups: shardGroups,
 	}
 }
 
-func (shardManager *ShardGroupMetadataManager) GetShardGroup(shardGroupId uint32) *metadata.ShardGroupMetadata {
-	//check index
-	return shardManager.shardGroups[shardGroupId]
+func (shardGroupManager *ShardGroupMetadataManager) GetShardGroup(shardGroupId uint32) *metadata.ShardGroupMetadata {
+	//shard group will always be available at index since shardGroupId has been fetched from filled
+	return shardGroupManager.shardGroups[shardGroupId]
 }
