@@ -1,4 +1,4 @@
-package models
+package storageengine
 
 import (
 	"scale.kv.store/internal/core"
@@ -34,7 +34,7 @@ func (shard *Shard) Get(key byte) *Result {
 
 	hashedBucketId := core.Get16MurmurHash([]byte{keyObject.Key})
 
-	iterator := NewIterator(int(hashedBucketId), NUMBER_OF_BUCKET)
+	iterator := core.NewIterator(int(hashedBucketId), NUMBER_OF_BUCKET)
 
 	bucketId := iterator.Current()
 	for bucketId != -1 {
@@ -77,7 +77,7 @@ func (shard *Shard) SearchForWrite(key byte) *Result {
 
 	hashedBucketId := core.Get16MurmurHash([]byte{keyObject.Key})
 
-	iterator := NewIterator(int(hashedBucketId), NUMBER_OF_BUCKET)
+	iterator := core.NewIterator(int(hashedBucketId), NUMBER_OF_BUCKET)
 
 	bucketId := iterator.Current()
 
@@ -155,7 +155,7 @@ func (shard *Shard) Delete(key byte) *Result {
 
 	hashedBucketId := core.Get16MurmurHash([]byte{keyObject.Key})
 
-	iterator := NewIterator(int(hashedBucketId), NUMBER_OF_BUCKET)
+	iterator := core.NewIterator(int(hashedBucketId), NUMBER_OF_BUCKET)
 
 	bucketId := iterator.Current()
 	for bucketId != -1 {

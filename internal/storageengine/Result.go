@@ -1,4 +1,6 @@
-package models
+package storageengine
+
+import "strconv"
 
 type ResultStatus int
 
@@ -77,4 +79,16 @@ func NewStopSearchResultWithBucket(bucketId int) *Result {
 		Status:   StopSearch,
 		BucketId: &bucketId,
 	}
+}
+
+func (result *Result) ToString() string {
+	return resultStatusNames[ResultStatus(result.Status)] + " : " + strconv.Itoa(int(result.Value.Value))
+}
+
+var resultStatusNames = map[ResultStatus]string{
+	Found:          "Found",
+	ContinueSearch: "ContinueSearch",
+	StopSearch:     "StopSearch",
+	AddedOrUpdated: "AddedOrUpdated",
+	Deleted:        "Deleted",
 }
